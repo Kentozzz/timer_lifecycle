@@ -33,13 +33,21 @@ function setTime() {
 onMounted(() => {
   const savedTime = localStorage.getItem('savedTime');
   const savedTimestamp = localStorage.getItem('savedTimestamp');
+
   if (savedTime !== null && savedTimestamp !== null) {
     const currentTime = Date.now();
     const elapsedSeconds = Math.floor((currentTime - Number(savedTimestamp)) / 1000);
-    // ここで数値に変換
     const calculatedTime = Number(savedTime) - elapsedSeconds;
-    startingTime.value = calculatedTime > 0 ? calculatedTime : 0;
-    time.value = Math.max(0, startingTime.value);
+
+    if (calculatedTime > 0) {
+      time.value = calculatedTime;
+      timeSet.value = true; // 重要：timeSetをtrueに設定してからstartTimerを呼び出す
+      startTimer(); // タイマー再開
+    } else {
+      time.value = 0;
+      startingTime.value = 0;
+      timeSet.value = false;
+    }
   }
 });
 
@@ -74,7 +82,13 @@ function stopTimer() {
 function resetTimer() {
   clearInterval(timerId.value);
   timerId.value = null;
-  time.value = startingTime.value;
+  time.value = 0;      // 残り時間を0に
+  startingTime.value = 0;
+  timeSet.value = false;
+
+  // ローカルストレージからタイマーの状態を消去
+  localStorage.removeItem('savedTime');
+  localStorage.removeItem('savedTimestamp');
 }
 
 const formatTime = computed(() => {
