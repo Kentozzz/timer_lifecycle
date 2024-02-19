@@ -16,7 +16,7 @@
 
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const inputMinutes = ref(0);
 const startingTime = ref(0);
@@ -30,11 +30,28 @@ function setTime() {
   timeSet.value = true;
 }
 
+onMounted(() => {
+  const savedTime = localStorage.getItem('savedTime');
+  const savedTimestamp = localStorage.getItem('savedTimestamp');
+  if (savedTime !== null && savedTimestamp !== null) {
+    const currentTime = Date.now();
+    const elapsedSeconds = Math.floor((currentTime - Number(savedTimestamp)) / 1000);
+    // ここで数値に変換
+    const calculatedTime = Number(savedTime) - elapsedSeconds;
+    startingTime.value = calculatedTime > 0 ? calculatedTime : 0;
+    time.value = Math.max(0, startingTime.value);
+  }
+});
+
+
 function startTimer() {
   if (timerId.value === null && timeSet.value) {
     timerId.value = setInterval(() => {
       if (time.value > 0) {
         time.value -= 1; // 1秒減らす
+        localStorage.setItem('savedTime', time.value);
+        localStorage.setItem('savedTimestamp', Date.now());
+
         // タイマーが0になった時の処理
         if (time.value === 0) {
           setTimeout(() => {
