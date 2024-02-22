@@ -33,17 +33,26 @@ function setTime() {
 onMounted(() => {
   const savedTime = localStorage.getItem('savedTime');
   const savedTimestamp = localStorage.getItem('savedTimestamp');
+  const timerRunning = localStorage.getItem('timerRunning') === 'true';
 
   if (savedTime !== null && savedTimestamp !== null) {
     const currentTime = Date.now();
     const elapsedSeconds = Math.floor((currentTime - Number(savedTimestamp)) / 1000);
-    const calculatedTime = Number(savedTime) - elapsedSeconds;
+    let calculatedTime = Number(savedTime) - elapsedSeconds;
 
-    if (calculatedTime > 0) {
+    // タイマーが動作中だった場合
+    if (calculatedTime > 0 && timerRunning) {
       time.value = calculatedTime;
-      timeSet.value = true; // 重要：timeSetをtrueに設定してからstartTimerを呼び出す
+      timeSet.value = true;
       startTimer(); // タイマー再開
+    } else if (!timerRunning) {
+      // タイマーがストップされていた場合、カウントダウンは再開せず、残り時間をそのまま保持
+      // elapsedSeconds に基づく自動的な時間の減少を避け、保存されていた時間を優先する
+      calculatedTime = Number(savedTime); // この行の変更です
+      time.value = calculatedTime > 0 ? calculatedTime : 0;
+      timeSet.value = true; // 残り時間が0以上であれば、設定済みと判定
     } else {
+      // タイマーの終了または無効状態の処理
       time.value = 0;
       startingTime.value = 0;
       timeSet.value = false;
@@ -52,8 +61,10 @@ onMounted(() => {
 });
 
 
+
 function startTimer() {
   if (timerId.value === null && timeSet.value) {
+    localStorage.setItem('timerRunning', 'true');
     timerId.value = setInterval(() => {
       if (time.value > 0) {
         time.value -= 1; // 1秒減らす
@@ -77,6 +88,7 @@ function startTimer() {
 function stopTimer() {
   clearInterval(timerId.value);
   timerId.value = null;
+  localStorage.setItem('timerRunning', 'false');
 }
 
 function resetTimer() {
